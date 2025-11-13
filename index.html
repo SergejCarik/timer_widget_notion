@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Countdown Timer</title>
+<style>
+  body {
+    margin: 0; font-family: system-ui, sans-serif;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    height: 100vh; background: #fafafa;
+  }
+  .timer-box {
+    text-align: center; padding: 20px 30px;
+    border-radius: 16px; box-shadow: 0 6px 24px rgba(0,0,0,0.1);
+    background: white; min-width: 260px;
+  }
+  input {
+    font-size: 1.2rem; text-align: center;
+    border: 1px solid #ddd; border-radius: 8px;
+    padding: 6px 10px; width: 120px;
+  }
+  button {
+    font-size: 1rem; margin-left: 8px;
+    padding: 6px 12px; border: none; border-radius: 8px;
+    background: #007aff; color: white; cursor: pointer;
+  }
+  button:hover { background: #0062d6; }
+  .time {
+    font-size: 3rem; margin: 20px 0;
+  }
+  .bar {
+    height: 10px; width: 100%; background: #eee; border-radius: 8px; overflow: hidden;
+  }
+  .fill {
+    height: 100%; width: 0; background: linear-gradient(90deg,#00b4ff,#007aff);
+    transition: width 1s linear;
+  }
+</style>
+</head>
+<body>
+  <div class="timer-box">
+    <div>
+      <input id="timeInput" type="text" placeholder="hh:mm:ss">
+      <button id="startBtn">Start</button>
+    </div>
+    <div class="time" id="display">00:00:00</div>
+    <div class="bar"><div class="fill" id="fill"></div></div>
+  </div>
+
+<script>
+let timer=null, total=0, remaining=0, startTime=0;
+const display=document.getElementById('display');
+const fill=document.getElementById('fill');
+
+function parseTime(t){
+  const parts=t.split(':').map(x=>parseInt(x,10)||0);
+  while(parts.length<3) parts.unshift(0);
+  return parts[0]*3600 + parts[1]*60 + parts[2];
+}
+
+function format(sec){
+  const h=Math.floor(sec/3600), m=Math.floor(sec%3600/60), s=sec%60;
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+
+function tick(){
+  const now=Date.now();
+  remaining = Math.max(0, total - Math.floor((now - startTime)/1000));
+  display.textContent=format(remaining);
+  const pct = 100 - (remaining/total)*100;
+  fill.style.width = pct + '%';
+  if(remaining<=0){ clearInterval(timer); flash(); beep(); }
+}
+
+function flash(){
+  document.body.style.background='#ffcccc';
+  setTimeout(()=>document.body.style.background='#fafafa',800);
+}
+
+function beep(){
+  try{
+    const ctx=new(AudioContext||webkitAudioContext)();
+    const o=ctx.createOscillator(); o.type='sine'; o.frequency.setValueAtTime(800,ctx.currentTime);
+    const g=ctx.createGain(); g.gain.setValueAtTime(0.1,ctx.currentTime);
+    o.connect(g).connect(ctx.destination); o.start(); o.stop(ctx.currentTime+0.3);
+  }catch(e){}
+}
+
+document.getElementById('startBtn').onclick=()=>{
+  const t=parseTime(document.getElementById('timeInput').value.trim());
+  if(!t){ alert('Enter time as hh:mm:ss'); return; }
+  total=t; remaining=t; startTime=Date.now();
+  clearInterval(timer);
+  tick(); timer=setInterval(tick,1000);
+};
+</script>
+</body>
+</html>
